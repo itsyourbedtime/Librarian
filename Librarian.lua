@@ -84,7 +84,8 @@ local function get_links()
   print("Getting git links")
   for i=1,#links.topics do
     links.names[i] = string.gsub(links.topics[i]:match("^.+/(.+)/"), "-", "_")
-    table.insert(browser.entries, links.names[i])
+    local name = exist(i) and "* " ..  links.names[i] or links.names[i]
+    table.insert(browser.entries, name)
     if not tab.contains(last_links, links.topics[i]) then
       local link = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep -Eo "(http|https)://github[a-zA-Z0-9./?=_-]*.zip|.zip" | cut -d'/' -f1,2,3,4,5]]
       local descr = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep 'meta name="description"' -A 2]]
@@ -107,21 +108,21 @@ local function get_links()
     end
   end
   last_links = links.topics
-  tab.save(links, _path.code .. "librarian/lib/scripts.db")
+  tab.save(links, _path.code .. "Librarian/lib/scripts.db")
   main_menu = true
   redraw()
 end
 
 local function init_db()
-  if util.file_exists(_path.code .. "librarian/lib/scripts.db") == true then
-    load_db = tab.load(_path.code .. "librarian/lib/scripts.db")
+  if util.file_exists(_path.code .. "Librarian/lib/scripts.db") == true then
+    load_db = tab.load(_path.code .. "Librarian/lib/scripts.db")
     links = load_db
     browser.entries = {}
     for i=1,#links.topics do
       table.insert(browser.entries, links.names[i])
     end
   else
-    util.make_dir(_path.code .. "librarian/lib/")
+    util.make_dir(_path.code .. "Librarian/lib/")
     get_links()
   end
   redraw()
