@@ -1,7 +1,8 @@
 -- Librarian
 --
--- hold btn 1 to update lib
---
+-- hold btn 1 to
+--   * update lib
+--   * update selected script
 
 local UI = require "ui"
 local p = 0
@@ -9,12 +10,12 @@ local main_menu = true
 local script_menu = false
 local script = 0
 
- links = {}
+local links = {}
 links.topics = {}
 links.names = {}
 links.git = {}
 links.descr = {}
-pos_x = 0
+local pull_msg = nil
 
 local function exist(scr)
   if util.file_exists(_path.code .. links.names[scr]) == true then
@@ -30,6 +31,13 @@ local function get(scr)
   end
 end
 
+local function git_pull(scr)
+  if util.file_exists(_path.code .. links.names[scr]) == false then
+    pull_msg = util.os_capture("cd " .. _path.code .. links.names[scr] .. "/ && git pull")
+  end
+  return pull_msg
+end
+
 local function rm(scr)
   if util.file_exists(_path.code .. links.names[scr]) == true then
     util.os_capture("cd " .. _path.code .. " && rm -rf ".. links.names[scr])
@@ -38,62 +46,82 @@ end
 
 
 local function draw_descr()
-  screen.level(6)
+  local description = {}
+  description = tab.split(links.descr[script], " ")
+  local lenl = 0
+  screen.level(15)
   screen.move(1,10)
-  screen.text(links.names[script])
-   screen.move(1 - pos_x,40)
-  screen.text(links.descr[script])
-  screen.move(128,60)
-  screen.text_right(exist(script) and "Remove" or "Install")
+  local y = 18
+  for i = 1, #description do
+    screen.level(i == 1 and 15 or 3)
+    screen.text(description[i] .. " ")
+    if i==1 or i == 4 or i == 8 then
+      y = y + 8
+      lenl = 0
+      screen.move(0,y) end
+  end
+  screen.level(1)
+  screen.move(0,62)
+  screen.text(exist(script) and "hold BTN1 to update" or "")
+  screen.level(6)
+  screen.move(128,62)
+  screen.text_right(exist(script) and "remove" or "install")
 end
 
 local function get_links()
+  local last_links = links.topics
   browser.entries = {}
+  screen.clear()
+  screen.move(12,30)
+  screen.level(9)
+  screen.text("Updating library data")
+  screen.update()
   links_to_topics = util.os_capture( [[curl -s https://llllllll.co/c/library | grep "raw-topic-link" | cut -d"'" -f2]])
   links.topics = tab.split(links_to_topics, " ")
   table.remove(links.topics,1)
   print("Getting topic links")
   tab.print(links.topics)
   print("Getting git links")
-  screen.clear()
-  screen.move(12,30)
-  screen.level(9)
-  screen.text("Updating library data")
-  screen.update()
   for i=1,#links.topics do
-    links.names[i] = links.topics[i]:match("^.+/(.+)/")
+    links.names[i] = string.gsub(links.topics[i]:match("^.+/(.+)/"), "-", "_")
     table.insert(browser.entries, links.names[i])
-    local link = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep -Eo "(http|https)://github[a-zA-Z0-9./?=_-]*.zip|.zip" | cut -d'/' -f1,2,3,4,5]]
-    local descr = [[curl --compressed -s ]]  .. links.topics[i] ..  [[  | grep 'meta name="description"' -A 2]]
-    links_to_git = util.os_capture(link)
-    description = util.os_capture(descr)
-    links.descr[i] =  tab.split(description,'"')[4]
-    print(links.descr[i])
-    links.git[i] = tab.split(links_to_git, " ")[1]
-    p = util.clamp(p + 1, 1, #links.topics) -- progress flag
-    screen.clear()
-    screen.move(12,30)
-    screen.level(9)
-    screen.text("Updating library data")
-    screen.move(34,40)
-    screen.level(2)
-    screen.text(p .. " of ".. #links.topics )
-    screen.update()
-   end
-   redraw()
-   tab.save(links, _path.code .. "utils/lib/scripts.db")
-   main_menu = true
+    if not tab.contains(last_links, links.topics[i]) then
+      local link = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep -Eo "(http|https)://github[a-zA-Z0-9./?=_-]*.zip|.zip" | cut -d'/' -f1,2,3,4,5]]
+      local descr = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep 'meta name="description"' -A 2]]
+      links_to_git = util.os_capture(link)
+      description = util.os_capture(descr)
+      links.descr[i] =  tab.split(description,'"')[4]
+      print(links.names[i])
+      links.git[i] = tab.split(links_to_git, " ")[1]
+      p = util.clamp(p + 1, 1, #links.topics) -- progress flag
+      screen.clear()
+      screen.move(12,30)
+      screen.level(9)
+      screen.text("Updating library data")
+      screen.move(38,40)
+      screen.level(2)
+      screen.text(p .. " of ".. #links.topics )
+      screen.update()
+    else
+      screen.update()
+    end
+  end
+  last_links = links.topics
+  tab.save(links, _path.code .. "librarian/lib/scripts.db")
+  main_menu = true
+  redraw()
 end
 
 local function init_db()
-  if util.file_exists(_path.code .. "utils/lib/scripts.db") == true then
-    load_db = tab.load(_path.code .. "utils/lib/scripts.db")
+  if util.file_exists(_path.code .. "librarian/lib/scripts.db") == true then
+    load_db = tab.load(_path.code .. "librarian/lib/scripts.db")
     links = load_db
     browser.entries = {}
     for i=1,#links.topics do
       table.insert(browser.entries, links.names[i])
     end
   else
+    util.make_dir(_path.code .. "librarian/lib/")
     get_links()
   end
   redraw()
@@ -103,7 +131,7 @@ end
 
 
 function init()
-  browser = UI.ScrollingList.new(10, 1, 1, {})
+  browser = UI.ScrollingList.new(0, 1, 1, {})
   browser.num_visible = 6
   browser.num_above_selected = 2
   browser.active = 1
@@ -122,7 +150,9 @@ function key(n,z)
       end
     end
   elseif script_menu then
-    if n == 2 then
+    if n == 1 then
+      git_pull(script)
+    elseif n == 2 then
       main_menu = true
       script_menu = false
     elseif n == 3 then
