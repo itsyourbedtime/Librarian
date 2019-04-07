@@ -1,4 +1,4 @@
--- Librarian 
+-- Librarian
 --
 -- hold btn 1 to update lib
 --
@@ -6,7 +6,7 @@
 local UI = require "ui"
 local p = 0
 local main_menu = true
-local script_menu = false 
+local script_menu = false
 local script = 0
 
  links = {}
@@ -19,14 +19,14 @@ pos_x = 0
 local function exist(scr)
   if util.file_exists(_path.code .. links.names[scr]) == true then
     return true
-  else 
+  else
     return false
   end
 end
 
 local function get(scr)
   if util.file_exists(_path.code .. links.names[scr]) == false then
-    util.os_capture("cd " .. _path.code .. " && git clone " .. links.git[scr] .. " " .. links.names[scr])  
+    util.os_capture("cd " .. _path.code .. " && git clone " .. links.git[scr] .. " " .. links.names[scr])
   end
 end
 
@@ -63,7 +63,7 @@ local function get_links()
   for i=1,#links.topics do
     links.names[i] = links.topics[i]:match("^.+/(.+)/")
     table.insert(browser.entries, links.names[i])
-    local link = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep -Eo "(http|https)://github[a-zA-Z0-9./?=_-]*" | grep zip | cut -d'/' -f1,2,3,4,5]]
+    local link = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep -Eo "(http|https)://github[a-zA-Z0-9./?=_-]*.zip|.zip" | cut -d'/' -f1,2,3,4,5]]
     local descr = [[curl --compressed -s ]]  .. links.topics[i] ..  [[  | grep 'meta name="description"' -A 2]]
     links_to_git = util.os_capture(link)
     description = util.os_capture(descr)
@@ -108,7 +108,7 @@ function init()
   browser.num_above_selected = 2
   browser.active = 1
   init_db()
-end 
+end
 
 function key(n,z)
   if main_menu then
@@ -116,9 +116,9 @@ function key(n,z)
       get_links()
     elseif n == 3 then
       if z == 1 then
-        script = browser.index 
+        script = browser.index
         script_menu = true
-        main_menu = false 
+        main_menu = false
       end
     end
   elseif script_menu then
@@ -138,7 +138,7 @@ function key(n,z)
   redraw()
 end
 
-function enc(n,d) 
+function enc(n,d)
   if n == 2 then
     if main_menu then
     browser:set_index_delta(d, false)
@@ -151,7 +151,7 @@ function enc(n,d)
 end
 
 
-function redraw() 
+function redraw()
   screen.clear()
   if main_menu then
     browser:redraw()
