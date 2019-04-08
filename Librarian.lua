@@ -81,7 +81,7 @@ local function get_links()
   tab.print(links.topics)
   for i=1,#links.topics do
     links.names[i] = string.gsub(links.topics[i]:match("^.+/(.+)/"), "-", "_")
-    links.names[i] = exist(i) and "* " ..  links.names[i] or links.names[i]
+    --links.names[i] = exist(i) and "* " ..  links.names[i] or links.names[i]
     --table.insert(browser.entries, name)
     if not tab.contains(last_links, links.topics[i]) then
       local link = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep -Eo "(http|https)://github[a-zA-Z0-9./?=_-]*.zip|.zip" | cut -d'/' -f1,2,3,4,5]]
