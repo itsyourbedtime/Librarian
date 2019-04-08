@@ -10,7 +10,7 @@ local main_menu = true
 local script_menu = false
 local script = 0
 
-local links = {}
+links = {}
 links.topics = {}
 links.names = {}
 links.git = {}
@@ -27,7 +27,7 @@ end
 
 local function get(scr)
   if util.file_exists(_path.code .. links.names[scr]) == false then
-    util.os_capture("cd " .. _path.code .. " && git clone " .. links.git[scr] .. " " .. links.names[scr])
+    util.os_capture("cd " .. _path.code .. " && git clone " .. links.git[links.names[scr]] .. " " .. links.names[scr])
   end
 end
 
@@ -44,10 +44,9 @@ local function rm(scr)
   end
 end
 
-
 local function draw_descr()
   local description = {}
-  description = tab.split(links.descr[script], " ")
+  description = tab.split(links.descr[links.names[script]], " ")
   local lenl = 0
   screen.level(15)
   screen.move(1,10)
@@ -79,21 +78,19 @@ local function get_links()
   links_to_topics = util.os_capture( [[curl -s https://llllllll.co/c/library | grep "raw-topic-link" | cut -d"'" -f2]])
   links.topics = tab.split(links_to_topics, " ")
   table.remove(links.topics,1)
-  print("Getting topic links")
   tab.print(links.topics)
-  print("Getting git links")
   for i=1,#links.topics do
     links.names[i] = string.gsub(links.topics[i]:match("^.+/(.+)/"), "-", "_")
-    local name = exist(i) and "* " ..  links.names[i] or links.names[i]
-    table.insert(browser.entries, name)
+    links.names[i] = exist(i) and "* " ..  links.names[i] or links.names[i]
+    --table.insert(browser.entries, name)
     if not tab.contains(last_links, links.topics[i]) then
       local link = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep -Eo "(http|https)://github[a-zA-Z0-9./?=_-]*.zip|.zip" | cut -d'/' -f1,2,3,4,5]]
       local descr = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep 'meta name="description"' -A 2]]
       links_to_git = util.os_capture(link)
       description = util.os_capture(descr)
-      links.descr[i] =  tab.split(description,'"')[4]
+      links.descr[links.names[i]] =  tab.split(description,'"')[4]
       print(links.names[i])
-      links.git[i] = tab.split(links_to_git, " ")[1]
+      links.git[links.names[i]] = tab.split(links_to_git, " ")[1]
       p = util.clamp(p + 1, 1, #links.topics) -- progress flag
       screen.clear()
       screen.move(12,30)
@@ -107,6 +104,7 @@ local function get_links()
       screen.update()
     end
   end
+  browser.entries = links.names
   last_links = links.topics
   tab.save(links, _path.code .. "Librarian/lib/scripts.db")
   main_menu = true
@@ -137,6 +135,7 @@ function init()
   browser.num_above_selected = 2
   browser.active = 1
   init_db()
+  get_links()
 end
 
 function key(n,z)
@@ -173,9 +172,6 @@ function enc(n,d)
   if n == 2 then
     if main_menu then
     browser:set_index_delta(d, false)
-    redraw()
-    elseif script_menu then
-    pos_x = util.clamp(pos_x + d, 0, #links.descr[script] + 6)
     redraw()
     end
   end
