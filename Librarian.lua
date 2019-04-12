@@ -84,7 +84,7 @@ local function get_links()
     --links.names[i] = exist(i) and "* " ..  links.names[i] or links.names[i]
     --table.insert(browser.entries, name)
     if not tab.contains(last_links, links.topics[i]) then
-      local link = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep -Eo "(http|https)://github[a-zA-Z0-9./?=_-]*.zip|.zip" | cut -d'/' -f1,2,3,4,5]]
+      local link = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep -Eo "^(http|https)://github[a-zA-Z0-9./?=_-]*.zip" | cut -d'/' -f1,2,3,4,5]]
       local descr = [[curl --compressed -s ]]  .. links.topics[i] ..  [[ | grep 'meta name="description"' -A 2]]
       links_to_git = util.os_capture(link)
       description = util.os_capture(descr)
